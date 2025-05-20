@@ -263,9 +263,9 @@ def display_similar_images(similar_images: List[Tuple[Document, float]], similar
 
     st.subheader(display_message)
 
-    # Add a note about the number of images
-    if total_images > 20:
-        st.info(f"Displaying all {total_images} matching images. Scroll down to see all results.")
+    # # Add a note about the number of images
+    # if total_images > 20:
+    #     st.info(f"Displaying all {total_images} matching images. Scroll down to see all results.")
 
     # Add a download button for image URLs if there are many results
     if total_images > 5:

@@ -19,13 +19,26 @@ def get_db_connection():
     Returns:
         connection: PostgreSQL database connection
     """
-    return psycopg2.connect(
-        dbname=config.DB_NAME,
-        user=config.DB_USER,
-        password=config.DB_PASSWORD,
-        host=config.DB_HOST,
-        port=config.DB_PORT
-    )
+    # Check if we're connecting to Aiven PostgreSQL (based on host)
+    if 'aivencloud.com' in config.DB_HOST:
+        # Use SSL for Aiven PostgreSQL
+        return psycopg2.connect(
+            dbname=config.DB_NAME,
+            user=config.DB_USER,
+            password=config.DB_PASSWORD,
+            host=config.DB_HOST,
+            port=config.DB_PORT,
+            sslmode='require'
+        )
+    else:
+        # Use standard connection for local PostgreSQL
+        return psycopg2.connect(
+            dbname=config.DB_NAME,
+            user=config.DB_USER,
+            password=config.DB_PASSWORD,
+            host=config.DB_HOST,
+            port=config.DB_PORT
+        )
 
 def database_exists() -> bool:
     """

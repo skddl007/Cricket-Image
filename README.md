@@ -114,37 +114,67 @@ The system uses a sophisticated approach for vector similarity search:
    ```
 4. Access the application at http://localhost:8501
 
-## Deployment on Render
+## Deployment on Render with Aiven PostgreSQL
 
 ### Prerequisites
 
 1. Create a [Render](https://render.com) account
-2. Fork this repository to your GitHub account
+2. Create an [Aiven](https://aiven.io) account for PostgreSQL database
+3. Fork this repository to your GitHub account
+
+### Setting Up Aiven PostgreSQL
+
+1. Log in to your Aiven account
+2. Create a new PostgreSQL service:
+   - Choose a service name (e.g., `cricket-image-db`)
+   - Select a cloud provider and region (preferably close to your Render region)
+   - Choose a plan that fits your needs
+   - Click "Create Service"
+
+3. Once the service is created, go to the "Overview" tab and note down the following connection details:
+   - Host
+   - Port
+   - Database name
+   - Username
+   - Password
+
+4. Enable the pgvector extension:
+   - Go to the "Databases" tab
+   - Click on your database (usually "defaultdb")
+   - Go to the "Extensions" tab
+   - Find "vector" in the list and click "Enable"
 
 ### Option 1: Blueprint Deployment (Recommended)
 
-1. Log in to your Render dashboard
-2. Click "New" and select "Blueprint"
-3. Connect your GitHub repository
-4. Configure the environment variables:
-   - `GROQ_API_KEY`: [your Groq API key]
-5. Click "Apply" to deploy the application
+1. Update the `render.yaml` file with your Aiven PostgreSQL credentials:
+   ```yaml
+   envVars:
+     - key: DB_NAME
+       value: your_database_name
+     - key: DB_USER
+       value: your_username
+     - key: DB_PASSWORD
+       value: your_password
+     - key: DB_HOST
+       value: your_host
+     - key: DB_PORT
+       value: your_port
+   ```
 
-The `render.yaml` file will automatically configure:
-- A PostgreSQL database with pgvector extension
-- A web service running the Streamlit application
+2. Log in to your Render dashboard
+3. Click "New" and select "Blueprint"
+4. Connect your GitHub repository
+5. Configure the environment variables:
+   - `GROQ_API_KEY`: [your Groq API key]
+6. Click "Apply" to deploy the application
+
+The `render.yaml` file will automatically configure the web service running the Streamlit application.
 
 ### Option 2: Manual Deployment
 
 If you prefer to set up services manually on Render:
 
-1. Create a PostgreSQL database service:
-   - Select PostgreSQL as the service type
-   - Choose PostgreSQL 15 as the version
-   - Enable the pgvector extension
-   - Note the connection details for the next step
-
-2. Create a web service:
+1. Create a web service:
    - Select Web Service as the service type
    - Connect your GitHub repository
    - Set the environment to Python
@@ -157,14 +187,24 @@ If you prefer to set up services manually on Render:
      python scripts/setup_db_render.py && streamlit run app.py
      ```
    - Set the following environment variables:
-     - `DB_NAME`: [database name from step 1]
-     - `DB_USER`: [database user from step 1]
-     - `DB_PASSWORD`: [database password from step 1]
-     - `DB_HOST`: [database host from step 1]
-     - `DB_PORT`: [database port from step 1]
+     - `DB_NAME`: [your Aiven database name]
+     - `DB_USER`: [your Aiven username]
+     - `DB_PASSWORD`: [your Aiven password]
+     - `DB_HOST`: [your Aiven host]
+     - `DB_PORT`: [your Aiven port]
      - `GROQ_API_KEY`: [your Groq API key]
 
-3. Wait for the deployment to complete and access your application
+2. Wait for the deployment to complete and access your application
+
+### Verifying the Deployment
+
+After deployment, you can verify the database setup by running:
+
+```
+python scripts/verify_aiven_db.py
+```
+
+For more detailed deployment instructions, see [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md).
 
 ## Usage
 

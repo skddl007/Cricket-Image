@@ -52,8 +52,8 @@ def query_images(query: str, force_similarity: bool = False) -> Tuple[str, List[
 
     # Step 2: Handle special query types
     # Check if this is a team photos query
-    if is_team_photos_query(query):
-        return "No cricket images matching team photos from practice sessions are available.", [], False
+    # if is_team_photos_query(query):
+    #     return "No cricket images matching team photos from practice sessions are available.", [], False
 
     # Check if this is a practice images query
     if is_practice_images_query(query):

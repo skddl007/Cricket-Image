@@ -13,6 +13,12 @@ def create_database_if_not_exists():
     """
     Create the PostgreSQL database if it doesn't exist
     """
+    # Check if we're using Aiven PostgreSQL
+    if 'aivencloud.com' in config.DB_HOST:
+        print(f"Using Aiven PostgreSQL database '{config.DB_NAME}'")
+        print("Skipping database creation as Aiven databases are pre-created")
+        return
+
     # Connect to PostgreSQL server
     conn = psycopg2.connect(
         user=config.DB_USER,
