@@ -184,7 +184,7 @@ If you prefer to set up services manually on Render:
      ```
    - Set the start command to:
      ```
-     python scripts/setup_db_render.py && streamlit run app.py
+     gunicorn wsgi:app --timeout 120 --log-level debug
      ```
    - Set the following environment variables:
      - `DB_NAME`: [your Aiven database name]
@@ -193,8 +193,25 @@ If you prefer to set up services manually on Render:
      - `DB_HOST`: [your Aiven host]
      - `DB_PORT`: [your Aiven port]
      - `GROQ_API_KEY`: [your Groq API key]
+     - `PORT`: 10000
 
 2. Wait for the deployment to complete and access your application
+
+### Important Deployment Notes
+
+The application uses a special deployment configuration for Render:
+
+1. The `Procfile` specifies `gunicorn wsgi:app --timeout 120` as the command to run
+2. The `wsgi.py` file contains a WSGI application that starts Streamlit in a separate thread
+3. The `scripts/setup_db_render.py` script initializes the database and downloads NLTK resources
+4. The `start.py` script can be used to run the application locally in the same way it runs on Render
+
+If you encounter deployment issues, check the following:
+
+1. Make sure the `wsgi.py` file correctly defines an `app` object that Gunicorn can use
+2. Ensure all NLTK resources are downloaded during the build process
+3. Verify that the database connection parameters are correct
+4. Check the Render logs for any errors during startup
 
 ### Verifying the Deployment
 

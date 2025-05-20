@@ -12,18 +12,15 @@ from typing import List, Tuple, Optional, Dict, Any
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 from nltk.corpus import wordnet
-
-# Import config to get data directory
 import config
 
-# Download required NLTK resources
 def download_nltk_resources():
     """Download all required NLTK resources if they're not already available"""
     resources = [
         'punkt',
         'wordnet',
-        'omw-1.4',  # Open Multilingual WordNet
-        'averaged_perceptron_tagger'  # This is the correct resource name
+        'omw-1.4',
+        'averaged_perceptron_tagger'
     ]
 
     for resource in resources:
@@ -31,11 +28,9 @@ def download_nltk_resources():
             nltk.data.find(f'tokenizers/{resource}' if resource == 'punkt'
                           else f'corpora/{resource}' if resource in ['wordnet', 'omw-1.4']
                           else f'taggers/{resource}')
-            print(f"NLTK resource '{resource}' is already available.")
         except LookupError:
             print(f"Downloading NLTK resource '{resource}'...")
             nltk.download(resource)
-            print(f"Downloaded NLTK resource '{resource}'.")
 
 # Download resources when module is imported
 download_nltk_resources()
@@ -44,7 +39,6 @@ download_nltk_resources()
 stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
-# Load reference data for entity-specific variations
 def load_reference_data():
     """
     Load reference data from CSV files to build comprehensive entity variations
@@ -54,18 +48,13 @@ def load_reference_data():
     """
     try:
         # Define paths to reference data files
-        players_path = os.path.join(config.DATA_DIR, "Players.csv")
-        action_path = os.path.join(config.DATA_DIR, "Action.csv")
-        event_path = os.path.join(config.DATA_DIR, "Event.csv")
-        mood_path = os.path.join(config.DATA_DIR, "Mood.csv")
-        sublocation_path = os.path.join(config.DATA_DIR, "Sublocation.csv")
-
-        # Load data from CSV files
-        players_df = pd.read_csv(players_path)
-        action_df = pd.read_csv(action_path)
-        event_df = pd.read_csv(event_path)
-        mood_df = pd.read_csv(mood_path)
-        sublocation_df = pd.read_csv(sublocation_path)
+        data_files = {
+            "players": os.path.join(config.DATA_DIR, "Players.csv"),
+            "actions": os.path.join(config.DATA_DIR, "Action.csv"),
+            "events": os.path.join(config.DATA_DIR, "Event.csv"),
+            "moods": os.path.join(config.DATA_DIR, "Mood.csv"),
+            "sublocations": os.path.join(config.DATA_DIR, "Sublocation.csv")
+        }
 
         # Create entity variations dictionary
         entity_variations = {
@@ -76,47 +65,45 @@ def load_reference_data():
             "sublocations": {}
         }
 
-        # Process player names
-        for _, row in players_df.iterrows():
-            player_name = row['Player Name']
-            variations = generate_player_name_variations(player_name)
-            entity_variations["players"][player_name.lower()] = variations
+        # Process each entity type
+        entity_df_map = {
+            "players": pd.read_csv(data_files["players"]),
+            "actions": pd.read_csv(data_files["actions"]),
+            "events": pd.read_csv(data_files["events"]),
+            "moods": pd.read_csv(data_files["moods"]),
+            "sublocations": pd.read_csv(data_files["sublocations"])
+        }
 
-        # Process actions
-        for _, row in action_df.iterrows():
-            action_name = row['action_name']
-            variations = generate_action_variations(action_name)
-            entity_variations["actions"][action_name.lower()] = variations
+        column_name_map = {
+            "players": "Player Name",
+            "actions": "action_name",
+            "events": "event_name",
+            "moods": "mood_name",
+            "sublocations": "sublocation_name"
+        }
 
-        # Process events
-        for _, row in event_df.iterrows():
-            event_name = row['event_name']
-            variations = generate_event_variations(event_name)
-            entity_variations["events"][event_name.lower()] = variations
+        variation_function_map = {
+            "players": generate_player_name_variations,
+            "actions": generate_action_variations,
+            "events": generate_event_variations,
+            "moods": generate_mood_variations,
+            "sublocations": generate_sublocation_variations
+        }
 
-        # Process moods
-        for _, row in mood_df.iterrows():
-            mood_name = row['mood_name']
-            variations = generate_mood_variations(mood_name)
-            entity_variations["moods"][mood_name.lower()] = variations
+        # Process all entity types
+        for entity_type, df in entity_df_map.items():
+            column_name = column_name_map[entity_type]
+            variation_function = variation_function_map[entity_type]
 
-        # Process sublocations
-        for _, row in sublocation_df.iterrows():
-            sublocation_name = row['sublocation_name']
-            variations = generate_sublocation_variations(sublocation_name)
-            entity_variations["sublocations"][sublocation_name.lower()] = variations
+            for _, row in df.iterrows():
+                entity_name = row[column_name]
+                variations = variation_function(entity_name)
+                entity_variations[entity_type][entity_name.lower()] = variations
 
         return entity_variations
     except Exception as e:
         print(f"Error loading reference data: {e}")
-        # Return empty dictionary if loading fails
-        return {
-            "players": {},
-            "actions": {},
-            "events": {},
-            "moods": {},
-            "sublocations": {}
-        }
+        return {key: {} for key in ["players", "actions", "events", "moods", "sublocations"]}
 
 # Functions to generate variations for different entity types
 def generate_player_name_variations(player_name: str) -> List[str]:
@@ -132,56 +119,45 @@ def generate_player_name_variations(player_name: str) -> List[str]:
     variations = []
     name = player_name.strip()
 
-    # Add the original name
-    variations.append(name)
-
-    # Add lowercase version
-    variations.append(name.lower())
+    # Add the original name and lowercase version
+    variations.extend([name, name.lower()])
 
     # Add name without spaces
     if ' ' in name:
-        variations.append(name.replace(' ', ''))
-        variations.append(name.lower().replace(' ', ''))
+        variations.extend([name.replace(' ', ''), name.lower().replace(' ', '')])
 
     # Split the name into parts
     name_parts = name.split()
 
-    # Add first name only
     if len(name_parts) > 1:
-        variations.append(name_parts[0])
-        variations.append(name_parts[0].lower())
+        # Add first and last name variations
+        variations.extend([name_parts[0], name_parts[0].lower(), name_parts[-1], name_parts[-1].lower()])
 
-    # Add last name only
-    if len(name_parts) > 1:
-        variations.append(name_parts[-1])
-        variations.append(name_parts[-1].lower())
-
-    # Add initials + last name variations
-    if len(name_parts) > 1:
+        # Add initials + last name variations
         initials = ''.join([part[0] for part in name_parts[:-1]])
-        variations.append(f"{initials} {name_parts[-1]}")
-        variations.append(f"{initials}{name_parts[-1]}")
-        variations.append(f"{initials}.{name_parts[-1]}")
-        variations.append(f"{initials} {name_parts[-1]}".lower())
-        variations.append(f"{initials}{name_parts[-1]}".lower())
-        variations.append(f"{initials}.{name_parts[-1]}".lower())
-
-        # Add period-separated initials
         period_initials = '.'.join([part[0] for part in name_parts[:-1]]) + '.'
-        variations.append(f"{period_initials} {name_parts[-1]}")
-        variations.append(f"{period_initials}{name_parts[-1]}")
-        variations.append(f"{period_initials} {name_parts[-1]}".lower())
-        variations.append(f"{period_initials}{name_parts[-1]}".lower())
+
+        initial_variations = [
+            f"{initials} {name_parts[-1]}",
+            f"{initials}{name_parts[-1]}",
+            f"{initials}.{name_parts[-1]}",
+            f"{period_initials} {name_parts[-1]}",
+            f"{period_initials}{name_parts[-1]}"
+        ]
+
+        variations.extend(initial_variations)
+        variations.extend([v.lower() for v in initial_variations])
 
     # Special case handling for specific players
-    if name.upper() == "FAF DU PLESSIS":
-        variations.extend(["faf", "du plessis", "duplessis", "faf duplessis"])
-    elif name.upper() == "MOEEN ALI":
-        variations.extend(["moen ali", "mo ali", "moeen", "moen"])
-    elif name.upper() == "JP KING":
-        variations.extend(["j.p. king", "j p king", "j.p king", "jp", "king"])
-    elif name.upper() == "STEPHEN FLEMING":
-        variations.extend(["fleming", "steve fleming", "stephen", "steve"])
+    special_cases = {
+        "FAF DU PLESSIS": ["faf", "du plessis", "duplessis", "faf duplessis"],
+        "MOEEN ALI": ["moen ali", "mo ali", "moeen", "moen"],
+        "JP KING": ["j.p. king", "j p king", "j.p king", "jp", "king"],
+        "STEPHEN FLEMING": ["fleming", "steve fleming", "stephen", "steve"]
+    }
+
+    if name.upper() in special_cases:
+        variations.extend(special_cases[name.upper()])
 
     # Remove duplicates and return
     return list(set(variations))
@@ -199,19 +175,13 @@ def generate_action_variations(action_name: str) -> List[str]:
     variations = []
     name = action_name.strip()
 
-    # Add the original name
-    variations.append(name)
-
-    # Add lowercase version
-    variations.append(name.lower())
-
-    # Add stemmed version
-    stemmed = stemmer.stem(name.lower())
-    variations.append(stemmed)
-
-    # Add lemmatized version
-    lemmatized = lemmatizer.lemmatize(name.lower(), pos='v')  # Assume it's a verb
-    variations.append(lemmatized)
+    # Add basic variations
+    variations.extend([
+        name,
+        name.lower(),
+        stemmer.stem(name.lower()),
+        lemmatizer.lemmatize(name.lower(), pos='v')  # Assume it's a verb
+    ])
 
     # Add present continuous form (if applicable)
     if not name.lower().endswith('ing'):
@@ -263,14 +233,7 @@ def generate_event_variations(event_name: str) -> List[str]:
     Returns:
         List[str]: List of event variations
     """
-    variations = []
-    name = event_name.strip()
-
-    # Add the original name
-    variations.append(name)
-
-    # Add lowercase version
-    variations.append(name.lower())
+    variations = [event_name.strip(), event_name.strip().lower()]
 
     # Add specific variations based on the event
     event_specific_variations = {
@@ -287,8 +250,8 @@ def generate_event_variations(event_name: str) -> List[str]:
     }
 
     # Add event-specific variations if available
-    if name.lower() in event_specific_variations:
-        variations.extend(event_specific_variations[name.lower()])
+    if event_name.strip().lower() in event_specific_variations:
+        variations.extend(event_specific_variations[event_name.strip().lower()])
 
     # Remove duplicates and return
     return list(set(variations))
@@ -303,14 +266,7 @@ def generate_mood_variations(mood_name: str) -> List[str]:
     Returns:
         List[str]: List of mood variations
     """
-    variations = []
-    name = mood_name.strip()
-
-    # Add the original name
-    variations.append(name)
-
-    # Add lowercase version
-    variations.append(name.lower())
+    variations = [mood_name.strip(), mood_name.strip().lower()]
 
     # Add specific variations based on the mood
     mood_specific_variations = {
@@ -323,8 +279,8 @@ def generate_mood_variations(mood_name: str) -> List[str]:
     }
 
     # Add mood-specific variations if available
-    if name.lower() in mood_specific_variations:
-        variations.extend(mood_specific_variations[name.lower()])
+    if mood_name.strip().lower() in mood_specific_variations:
+        variations.extend(mood_specific_variations[mood_name.strip().lower()])
 
     # Remove duplicates and return
     return list(set(variations))
@@ -339,14 +295,7 @@ def generate_sublocation_variations(sublocation_name: str) -> List[str]:
     Returns:
         List[str]: List of sublocation variations
     """
-    variations = []
-    name = sublocation_name.strip()
-
-    # Add the original name
-    variations.append(name)
-
-    # Add lowercase version
-    variations.append(name.lower())
+    variations = [sublocation_name.strip(), sublocation_name.strip().lower()]
 
     # Add specific variations based on the sublocation
     sublocation_specific_variations = {
@@ -369,8 +318,8 @@ def generate_sublocation_variations(sublocation_name: str) -> List[str]:
     }
 
     # Add sublocation-specific variations if available
-    if name.lower() in sublocation_specific_variations:
-        variations.extend(sublocation_specific_variations[name.lower()])
+    if sublocation_name.strip().lower() in sublocation_specific_variations:
+        variations.extend(sublocation_specific_variations[sublocation_name.strip().lower()])
 
     # Remove duplicates and return
     return list(set(variations))
@@ -424,14 +373,14 @@ def get_synonyms(word: str) -> List[str]:
     Returns:
         List[str]: List of synonyms
     """
-    # Check cricket-specific synonyms first
     word_lower = word.lower()
+
+    # Check cricket-specific synonyms first
     for key, values in CRICKET_SYNONYMS.items():
         if word_lower == key:
             return values
         if word_lower in values:
-            synonyms = [key] + [v for v in values if v != word_lower]
-            return synonyms
+            return [key] + [v for v in values if v != word_lower]
 
     # Get synonyms from WordNet
     synonyms = []
@@ -444,30 +393,13 @@ def get_synonyms(word: str) -> List[str]:
     return synonyms
 
 def stem_word(word: str) -> str:
-    """
-    Stem a word using Porter stemmer
-
-    Args:
-        word (str): Word to stem
-
-    Returns:
-        str: Stemmed word
-    """
+    """Stem a word using Porter stemmer"""
     return stemmer.stem(word)
 
 def get_word_stems(text: str) -> List[str]:
-    """
-    Get stems of words in a text
-
-    Args:
-        text (str): Text to get stems from
-
-    Returns:
-        List[str]: List of stemmed words
-    """
+    """Get stems of words in a text"""
     words = word_tokenize(text.lower())
-    stems = [stem_word(word) for word in words if word.isalnum()]
-    return stems
+    return [stem_word(word) for word in words if word.isalnum()]
 
 def generate_refined_queries(query: str) -> List[str]:
     """
@@ -479,31 +411,23 @@ def generate_refined_queries(query: str) -> List[str]:
     Returns:
         List[str]: List of refined queries
     """
-    refined_queries = []
-
-    # Add the original query
-    refined_queries.append(query)
-
-    # Tokenize the query
+    refined_queries = [query]  # Add the original query
     words = word_tokenize(query.lower())
 
     # Get POS tags
     try:
         pos_tags = nltk.pos_tag(words)
-    except LookupError as e:
-        print(f"POS tagging error: {e}")
+    except LookupError:
         # Fallback: assign 'NN' (noun) tag to all words if POS tagging fails
         pos_tags = [(word, 'NN') for word in words]
-        print("Using fallback POS tagging (all words tagged as nouns)")
 
         # Try to download the correct resource
         try:
             nltk.download('averaged_perceptron_tagger')
-            print("Downloaded 'averaged_perceptron_tagger' resource.")
             # Try again with the downloaded resource
             pos_tags = nltk.pos_tag(words)
-        except Exception as e2:
-            print(f"Error downloading POS tagger: {e2}")
+        except Exception:
+            pass
 
     # Generate queries with synonyms
     for i, (word, pos) in enumerate(pos_tags):
@@ -529,10 +453,8 @@ def generate_refined_queries(query: str) -> List[str]:
         if pos.startswith('N') or pos.startswith('V') or pos.startswith('J'):
             synonyms = get_synonyms(word)
             for synonym in synonyms:
-                # Create a new query by replacing the word with its synonym
                 new_words = words.copy()
                 new_words[i] = synonym
-                # Stem the new query
                 new_stems = get_word_stems(' '.join(new_words))
                 new_stem_query = ' '.join(new_stems)
                 if new_stem_query not in refined_queries:
@@ -550,7 +472,6 @@ def correct_spelling(query: str) -> str:
     Returns:
         str: Corrected query
     """
-    # Split the query into words
     words = word_tokenize(query.lower())
 
     # Define common cricket terms that might be misspelled
@@ -589,10 +510,7 @@ def correct_spelling(query: str) -> str:
                 break
         corrected_words.append(corrected)
 
-    # Join the corrected words back into a query
-    corrected_query = ' '.join(corrected_words)
-
-    return corrected_query
+    return ' '.join(corrected_words)
 
 # Load entity variations when module is imported
 entity_variations = load_reference_data()
@@ -607,10 +525,7 @@ def refine_query(query: str) -> List[str]:
     Returns:
         List[str]: List of refined queries
     """
-    refined_queries = []
-
-    # Add the original query
-    refined_queries.append(query)
+    refined_queries = [query]  # Add the original query
 
     # 1. Correct spelling
     corrected_query = correct_spelling(query)
@@ -621,8 +536,7 @@ def refine_query(query: str) -> List[str]:
     refined_queries.extend(generate_refined_queries(query))
 
     # 3. Try entity-specific variations
-    entity_refined_queries = generate_entity_specific_queries(query)
-    refined_queries.extend(entity_refined_queries)
+    refined_queries.extend(generate_entity_specific_queries(query))
 
     # 4. Try removing stop words
     stop_words = ['a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'about', 'like', 'through', 'over', 'before', 'after', 'between', 'under', 'during', 'without', 'of']
@@ -649,7 +563,6 @@ def refine_query(query: str) -> List[str]:
 
         # Try lemmatization for verbs in the query
         lemmatized_pairs = []  # Store (original, lemmatized) pairs
-
         for word, tag in pos_tags:
             if tag.startswith('VB'):  # If it's a verb
                 lemmatized_word = lemmatizer.lemmatize(word, pos='v')
@@ -676,9 +589,7 @@ def refine_query(query: str) -> List[str]:
 
     # Remove duplicates and empty queries
     refined_queries = [q for q in refined_queries if q.strip()]
-    refined_queries = list(dict.fromkeys(refined_queries))
-
-    return refined_queries
+    return list(dict.fromkeys(refined_queries))
 
 def generate_entity_specific_queries(query: str) -> List[str]:
     """
@@ -693,76 +604,35 @@ def generate_entity_specific_queries(query: str) -> List[str]:
     refined_queries = []
     query_lower = query.lower()
 
-    # Check for player names in the query
-    for player_name, variations in entity_variations["players"].items():
-        for variation in variations:
-            if variation in query_lower:
-                # Replace the variation with other variations
-                for alt_variation in variations:
-                    if alt_variation != variation:
-                        refined_query = query_lower.replace(variation, alt_variation)
-                        refined_queries.append(refined_query)
+    # Process all entity types in a single loop
+    entity_types = ["players", "actions", "events", "moods", "sublocations"]
 
-    # Check for action names in the query
-    for action_name, variations in entity_variations["actions"].items():
-        for variation in variations:
-            if variation in query_lower:
-                # Replace the variation with other variations
-                for alt_variation in variations:
-                    if alt_variation != variation:
-                        refined_query = query_lower.replace(variation, alt_variation)
-                        refined_queries.append(refined_query)
-
-    # Check for event names in the query
-    for event_name, variations in entity_variations["events"].items():
-        for variation in variations:
-            if variation in query_lower:
-                # Replace the variation with other variations
-                for alt_variation in variations:
-                    if alt_variation != variation:
-                        refined_query = query_lower.replace(variation, alt_variation)
-                        refined_queries.append(refined_query)
-
-    # Check for mood names in the query
-    for mood_name, variations in entity_variations["moods"].items():
-        for variation in variations:
-            if variation in query_lower:
-                # Replace the variation with other variations
-                for alt_variation in variations:
-                    if alt_variation != variation:
-                        refined_query = query_lower.replace(variation, alt_variation)
-                        refined_queries.append(refined_query)
-
-    # Check for sublocation names in the query
-    for sublocation_name, variations in entity_variations["sublocations"].items():
-        for variation in variations:
-            if variation in query_lower:
-                # Replace the variation with other variations
-                for alt_variation in variations:
-                    if alt_variation != variation:
-                        refined_query = query_lower.replace(variation, alt_variation)
-                        refined_queries.append(refined_query)
+    for entity_type in entity_types:
+        for entity_name, variations in entity_variations[entity_type].items():
+            for variation in variations:
+                if variation in query_lower:
+                    # Replace the variation with other variations
+                    for alt_variation in variations:
+                        if alt_variation != variation:
+                            refined_query = query_lower.replace(variation, alt_variation)
+                            refined_queries.append(refined_query)
 
     # Handle special case for multiple player queries
-    if "and" in query_lower or "&" in query_lower or "," in query_lower or "with" in query_lower or "together" in query_lower or "same frame" in query_lower or "single frame" in query_lower:
-        # This might be a query about multiple players
-
-        # First, try to identify player names in the query
+    multi_player_indicators = ["and", "&", ",", "with", "together", "same frame", "single frame"]
+    if any(indicator in query_lower for indicator in multi_player_indicators):
+        # Identify player names in the query
         identified_players = []
         for player_name, variations in entity_variations["players"].items():
             for variation in variations:
                 if variation in query_lower:
                     identified_players.append((player_name, variation))
 
-        # If we found at least one player, try to create refined queries
         if identified_players:
             # Try different ways to combine players
             connectors = [" and ", " & ", ", ", " with ", " alongside ", " together with "]
 
             # Try different variations of the identified players
-            for player_info in identified_players:
-                player_name, variation = player_info
-                # Get all variations for this player
+            for player_name, variation in identified_players:
                 all_variations = entity_variations["players"][player_name]
 
                 # Replace the current variation with other variations
@@ -772,22 +642,22 @@ def generate_entity_specific_queries(query: str) -> List[str]:
                         refined_queries.append(refined_query)
 
                         # Also try with different connectors
+                        existing_connectors = [" and ", " & ", ", ", " with ", " alongside "]
                         for connector in connectors:
-                            for existing_connector in [" and ", " & ", ", ", " with ", " alongside "]:
+                            for existing_connector in existing_connectors:
                                 if existing_connector in query_lower:
                                     connector_refined = refined_query.replace(existing_connector, connector)
                                     refined_queries.append(connector_refined)
 
-            # Try adding "together" or "in the same frame" if not already present
-            together_terms = ["together", "in the same frame", "in a single frame", "in one frame"]
-            for term in together_terms:
-                if not any(t in query_lower for t in together_terms):
-                    refined_queries.append(f"{query_lower} {term}")
+            # Add special terms if not already present
+            special_term_groups = [
+                ["together", "in the same frame", "in a single frame", "in one frame"],
+                ["with multiple faces", "with at least 2 faces", "group photo"]
+            ]
 
-            # Try adding "with at least 2 faces" or similar phrases
-            face_terms = ["with multiple faces", "with at least 2 faces", "group photo"]
-            for term in face_terms:
-                if not any(t in query_lower for t in face_terms):
-                    refined_queries.append(f"{query_lower} {term}")
+            for term_group in special_term_groups:
+                if not any(term in query_lower for term in term_group):
+                    for term in term_group:
+                        refined_queries.append(f"{query_lower} {term}")
 
     return refined_queries

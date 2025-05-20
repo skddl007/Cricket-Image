@@ -67,7 +67,7 @@ This guide provides step-by-step instructions for deploying the Cricket Image Ch
    - Region: Choose a region close to your Aiven PostgreSQL database
    - Branch: `main` (or your preferred branch)
    - Build Command: `pip install -r requirements.txt && python -m nltk.downloader punkt wordnet omw-1.4 averaged_perceptron_tagger`
-   - Start Command: `python scripts/setup_db_render.py && streamlit run app.py`
+   - Start Command: `gunicorn wsgi:app --timeout 120 --log-level debug`
 
 5. Add the following environment variables:
    - `DB_NAME`: Your Aiven database name
@@ -77,6 +77,7 @@ This guide provides step-by-step instructions for deploying the Cricket Image Ch
    - `DB_PORT`: Your Aiven port
    - `GROQ_API_KEY`: Your Groq API key
    - `PYTHONUNBUFFERED`: `true`
+   - `PORT`: `10000` (Important for Streamlit to work with Gunicorn)
 
 6. Click "Create Web Service" to deploy
 
@@ -106,6 +107,24 @@ If the application fails to start or encounters errors:
 1. Check the logs in Render for error messages
 2. Verify that all required environment variables are set correctly
 3. Try redeploying the application
+
+### Gunicorn WSGI Application Error
+
+If you encounter an error like `Failed to find attribute 'app' in 'app'`:
+
+1. This means Gunicorn can't find the WSGI application object in your code
+2. Make sure the `wsgi.py` file correctly defines an `app` object that Gunicorn can use
+3. Verify that the Procfile contains the correct command: `web: gunicorn wsgi:app --timeout 120`
+4. Check that the `PORT` environment variable is set to `10000` for Streamlit to work with Gunicorn
+
+### Streamlit Not Starting
+
+If Streamlit doesn't start properly:
+
+1. Check the logs for any errors related to Streamlit
+2. Verify that the `wsgi.py` file is correctly starting Streamlit in a separate thread
+3. Make sure all NLTK resources are downloaded during the build process
+4. Try increasing the Gunicorn timeout in the Procfile (e.g., `--timeout 180`)
 
 ## Data Migration
 

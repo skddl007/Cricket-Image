@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import psycopg2
+import nltk
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 # Add parent directory to path to import modules
@@ -13,6 +14,25 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config
 from init_aiven_db import setup_pgvector, create_tables
+
+def download_nltk_resources():
+    """Download required NLTK resources"""
+    print("Downloading NLTK resources...")
+    resources = [
+        'punkt',
+        'wordnet',
+        'omw-1.4',
+        'averaged_perceptron_tagger'
+    ]
+
+    for resource in resources:
+        try:
+            print(f"Downloading NLTK resource '{resource}'...")
+            nltk.download(resource)
+            print(f"Downloaded NLTK resource '{resource}'.")
+        except Exception as e:
+            print(f"Error downloading NLTK resource '{resource}': {e}")
+            print("Continuing anyway...")
 
 def check_database_connection():
     """
@@ -96,9 +116,13 @@ def main():
     """
     print("Starting database setup for Render deployment with Aiven PostgreSQL...")
 
+    # Download NLTK resources first
+    download_nltk_resources()
+
     # Check database connection
     if not check_database_connection():
         print("Cannot proceed with database setup due to connection issues")
+        print("Continuing anyway to ensure NLTK resources are downloaded...")
         return
 
     # Set up pgvector extension
