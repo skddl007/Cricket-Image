@@ -1,5 +1,5 @@
 """
-WSGI wrapper for Streamlit app on Render
+WSGI bridge for Streamlit app on Render
 This file provides a WSGI application object for Gunicorn to use
 """
 
@@ -8,7 +8,6 @@ import sys
 import subprocess
 import threading
 import time
-from wsgiref.simple_server import make_server
 
 # Define the WSGI app for Gunicorn to use
 def simple_app(environ, start_response):
