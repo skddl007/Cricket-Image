@@ -1,14 +1,12 @@
 services:
-  # Web service for the Streamlit app
+  # Web service for the Flask app
   - type: web
     name: cricket-image-chatbot
     env: python
     region: singapore
     plan: free
-    buildCommand: |
-      pip install -r requirements.txt
-      python -m nltk.downloader punkt wordnet omw-1.4 averaged_perceptron_tagger
-    startCommand: gunicorn app_gunicorn:app --timeout 180 --log-level debug
+    buildCommand: ./build.sh
+    startCommand: gunicorn wsgi_flask:app --timeout 120 --log-level debug
     envVars:
       # Aiven PostgreSQL database credentials
       # These should be updated with your actual Aiven PostgreSQL credentials
@@ -28,9 +26,12 @@ services:
       # Ensure Python output is not buffered
       - key: PYTHONUNBUFFERED
         value: 'true'
-      # Add port for Streamlit
+      # Flask secret key
+      - key: SECRET_KEY
+        generateValue: true
+      # Flask port
       - key: PORT
         value: '10000'
-    healthCheckPath: /
+    healthCheckPath: /login
     # Increase the health check timeout
-    healthCheckTimeout: 300
+    healthCheckTimeout: 180

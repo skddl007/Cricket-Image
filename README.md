@@ -8,28 +8,37 @@ A chatbot that allows users to search for cricket images based on natural langua
 - **PostgreSQL**: Database for storing all data and vector embeddings
 - **Groq API**: LLM backend for natural language understanding
 - **HuggingFace Embeddings**: For converting text to vector embeddings
-- **Streamlit**: Web interface for the chatbot
+- **Flask**: Web framework for the backend API and frontend interface
 
 ## Project Structure
 
 ```
 CSK/
-├── app.py                # Streamlit web application
+├── api/                  # API routes
+│   └── routes.py         # Flask API endpoints
+├── static/               # Static files for Flask
+│   ├── css/              # CSS stylesheets
+│   └── js/               # JavaScript files
+├── templates/            # HTML templates for Flask
+│   ├── dashboard.html    # Dashboard template
+│   └── login.html        # Login template
+├── app_flask.py          # Flask application
 ├── auth.py               # Authentication system
+├── build.sh              # Build script for Render deployment
 ├── config.py             # Configuration settings
 ├── data_processor.py     # CSV data processing (legacy)
 ├── db_store.py           # PostgreSQL database operations
-├── Dockerfile            # Docker configuration for web app
-├── Dockerfile.postgres   # Docker configuration for PostgreSQL with pgvector
-├── docker-compose.yml    # Docker Compose configuration for local development
 ├── groq_service.py       # Groq API integration
+├── init_auth_tables.py   # Authentication tables initialization
 ├── init_db.py            # Database initialization script
-├── login.py              # Login page UI
+├── llm_service.py        # LLM service integration
+├── Procfile              # Procfile for Render deployment
 ├── query_refinement.py   # Query refinement for better search results
 ├── render.yaml           # Render deployment configuration
 ├── requirements.txt      # Python dependencies
 ├── runtime.txt           # Python version specification
 ├── vector_store.py       # Vector store management (PostgreSQL)
+├── wsgi_flask.py         # WSGI entry point for Flask
 ├── data/                 # Directory for CSV data
 │   ├── Action.csv        # Action reference data
 │   ├── Event.csv         # Event reference data
@@ -37,10 +46,9 @@ CSK/
 │   ├── Players.csv       # Players reference data
 │   ├── Sublocation.csv   # Sublocation reference data
 │   └── finalTaggedData.csv  # Cricket image metadata
-├── scripts/              # Utility scripts
-│   ├── init-pgvector.sql # SQL script to initialize pgvector
-│   └── setup_db.py       # Database setup script for deployment
-└── cache/                # Cache directory
+└── scripts/              # Utility scripts
+    ├── init-pgvector.sql # SQL script to initialize pgvector
+    └── setup_db_render.py # Database setup script for deployment
 ```
 
 ## Database Structure
@@ -73,9 +81,9 @@ The system uses a sophisticated approach for vector similarity search:
 
 ## Local Setup
 
-### Option 1: Manual Setup
+### Manual Setup
 
-1. Ensure you have Python 3.12+ installed
+1. Ensure you have Python 3.9+ installed
 2. Install the required packages:
    ```
    pip install -r requirements.txt
@@ -95,24 +103,20 @@ The system uses a sophisticated approach for vector similarity search:
      ```
    - Create a database named 'jsk1_data' (or update config.py with your database name)
    - Run the initialization script: `python init_db.py`
+   - Initialize authentication tables: `python init_auth_tables.py`
 4. Set your Groq API key as an environment variable:
    ```
    export GROQ_API_KEY=your_api_key_here
    ```
 5. Run the application with:
    ```
-   streamlit run app.py
+   python wsgi_flask.py
    ```
-
-### Option 2: Docker Setup (Recommended)
-
-1. Ensure you have Docker and Docker Compose installed
-2. Create a `.env` file based on `.env.sample` with your configuration
-3. Build and start the containers:
+   or
    ```
-   docker-compose up --build
+   flask run --app app_flask:create_app
    ```
-4. Access the application at http://localhost:8501
+6. Access the application at http://localhost:5000
 
 ## Deployment on Render with Aiven PostgreSQL
 
@@ -144,7 +148,7 @@ The system uses a sophisticated approach for vector similarity search:
    - Go to the "Extensions" tab
    - Find "vector" in the list and click "Enable"
 
-### Option 1: Blueprint Deployment (Recommended)
+### Blueprint Deployment (Recommended)
 
 1. Update the `render.yaml` file with your Aiven PostgreSQL credentials:
    ```yaml
@@ -166,11 +170,12 @@ The system uses a sophisticated approach for vector similarity search:
 4. Connect your GitHub repository
 5. Configure the environment variables:
    - `GROQ_API_KEY`: [your Groq API key]
+   - `SECRET_KEY`: [a secure random string for Flask sessions]
 6. Click "Apply" to deploy the application
 
-The `render.yaml` file will automatically configure the web service running the Streamlit application.
+The `render.yaml` file will automatically configure the web service running the Flask application.
 
-### Option 2: Manual Deployment
+### Manual Deployment
 
 If you prefer to set up services manually on Render:
 
@@ -180,11 +185,11 @@ If you prefer to set up services manually on Render:
    - Set the environment to Python
    - Set the build command to:
      ```
-     pip install -r requirements.txt && python -m nltk.downloader punkt wordnet omw-1.4 averaged_perceptron_tagger
+     ./build.sh
      ```
    - Set the start command to:
      ```
-     gunicorn wsgi:app --timeout 120 --log-level debug
+     gunicorn wsgi_flask:app --timeout 120 --log-level debug
      ```
    - Set the following environment variables:
      - `DB_NAME`: [your Aiven database name]
@@ -193,6 +198,7 @@ If you prefer to set up services manually on Render:
      - `DB_HOST`: [your Aiven host]
      - `DB_PORT`: [your Aiven port]
      - `GROQ_API_KEY`: [your Groq API key]
+     - `SECRET_KEY`: [a secure random string for Flask sessions]
      - `PORT`: 10000
 
 2. Wait for the deployment to complete and access your application
@@ -201,14 +207,14 @@ If you prefer to set up services manually on Render:
 
 The application uses a special deployment configuration for Render:
 
-1. The `Procfile` specifies `gunicorn wsgi:app --timeout 120` as the command to run
-2. The `wsgi.py` file contains a WSGI application that starts Streamlit in a separate thread
-3. The `scripts/setup_db_render.py` script initializes the database and downloads NLTK resources
-4. The `start.py` script can be used to run the application locally in the same way it runs on Render
+1. The `Procfile` specifies `gunicorn wsgi_flask:app --timeout 120` as the command to run
+2. The `build.sh` script installs dependencies, downloads NLTK resources, and initializes the database
+3. The `wsgi_flask.py` file contains a WSGI application that Flask uses
+4. The `scripts/setup_db_render.py` script initializes the database and downloads NLTK resources
 
 If you encounter deployment issues, check the following:
 
-1. Make sure the `wsgi.py` file correctly defines an `app` object that Gunicorn can use
+1. Make sure the `wsgi_flask.py` file correctly defines an `app` object that Gunicorn can use
 2. Ensure all NLTK resources are downloaded during the build process
 3. Verify that the database connection parameters are correct
 4. Check the Render logs for any errors during startup
@@ -218,16 +224,29 @@ If you encounter deployment issues, check the following:
 After deployment, you can verify the database setup by running:
 
 ```
-python scripts/verify_aiven_db.py
+python verify_db.py
 ```
 
-For more detailed deployment instructions, see [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md).
+For more detailed deployment instructions, see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md).
 
-## Usage
+## API Usage
 
-1. Enter a natural language query about cricket images
-2. The system will retrieve relevant images based on your query
-3. Results will display image links along with descriptions
+The Flask application provides the following endpoints:
+
+### Web Routes
+- `GET /`: Root endpoint (redirects to login)
+- `GET /login`: Login page
+- `GET /signup`: Signup page
+- `GET /dashboard`: Main dashboard (requires authentication)
+
+### API Endpoints
+- `POST /api/login`: Login a user
+- `POST /api/signup`: Register a new user
+- `POST /api/logout`: Logout a user
+- `POST /api/query`: Process a query and return results
+- `GET /api/user_queries`: Get a user's query history
+- `POST /api/feedback`: Handle user feedback on image relevance
+- `GET /api/user`: Get the current user
 
 ## Example Queries
 

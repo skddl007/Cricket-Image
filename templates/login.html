@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Cricket Image Chatbot</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 login-container">
+                <h1 class="text-center mb-4">🏏 Cricket Image Chatbot</h1>
+                <p class="text-center mb-4">Please log in or sign up to continue</p>
+                
+                <ul class="nav nav-tabs" id="authTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab" aria-controls="login" aria-selected="true">Login</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="signup-tab" data-bs-toggle="tab" data-bs-target="#signup" type="button" role="tab" aria-controls="signup" aria-selected="false">Sign Up</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="authTabsContent">
+                    <!-- Login Tab -->
+                    <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="card-title">Login</h3>
+                                <form id="loginForm">
+                                    <div class="mb-3">
+                                        <label for="loginEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="loginEmail" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="loginPassword" class="form-label">Password</label>
+                                        <input type="password" class="form-control" id="loginPassword" required>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">Login</button>
+                                    </div>
+                                    <div class="alert alert-danger mt-3 d-none" id="loginAlert"></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Signup Tab -->
+                    <div class="tab-pane fade" id="signup" role="tabpanel" aria-labelledby="signup-tab">
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="card-title">Sign Up</h3>
+                                <form id="signupForm">
+                                    <div class="mb-3">
+                                        <label for="signupName" class="form-label">Name</label>
+                                        <input type="text" class="form-control" id="signupName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="signupEmail" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="signupEmail" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="signupPassword" class="form-label">Password</label>
+                                        <input type="password" class="form-control" id="signupPassword" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                        <input type="password" class="form-control" id="confirmPassword" required>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="submit" class="btn btn-primary">Sign Up</button>
+                                    </div>
+                                    <div class="alert alert-danger mt-3 d-none" id="signupAlert"></div>
+                                    <div class="alert alert-success mt-3 d-none" id="signupSuccess"></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+</body>
+</html>

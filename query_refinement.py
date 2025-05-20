@@ -1,8 +1,5 @@
-"""
-Query refinement module for the Cricket Image Chatbot
-
-This module provides functions to refine queries when no results are found.
-"""
+# Query refinement module for the Cricket Image Chatbot
+# Provides functions to refine queries when no results are found
 
 import re
 import nltk
@@ -15,7 +12,7 @@ from nltk.corpus import wordnet
 import config
 
 def download_nltk_resources():
-    """Download all required NLTK resources if they're not already available"""
+    # Download all required NLTK resources if they're not already available
     resources = [
         'punkt',
         'wordnet',
@@ -40,12 +37,8 @@ stemmer = PorterStemmer()
 lemmatizer = WordNetLemmatizer()
 
 def load_reference_data():
-    """
-    Load reference data from CSV files to build comprehensive entity variations
-
-    Returns:
-        Dict: Dictionary containing entity variations
-    """
+    # Load reference data from CSV files to build comprehensive entity variations
+    # Returns dictionary containing entity variations
     try:
         # Define paths to reference data files
         data_files = {
@@ -107,15 +100,8 @@ def load_reference_data():
 
 # Functions to generate variations for different entity types
 def generate_player_name_variations(player_name: str) -> List[str]:
-    """
-    Generate variations of a player name
-
-    Args:
-        player_name (str): Player name to generate variations for
-
-    Returns:
-        List[str]: List of name variations
-    """
+    # Generate variations of a player name
+    # Takes player name and returns list of name variations
     variations = []
     name = player_name.strip()
 
@@ -163,15 +149,8 @@ def generate_player_name_variations(player_name: str) -> List[str]:
     return list(set(variations))
 
 def generate_action_variations(action_name: str) -> List[str]:
-    """
-    Generate variations of an action name
-
-    Args:
-        action_name (str): Action name to generate variations for
-
-    Returns:
-        List[str]: List of action variations
-    """
+    # Generate variations of an action name
+    # Takes action name and returns list of action variations
     variations = []
     name = action_name.strip()
 
@@ -224,15 +203,8 @@ def generate_action_variations(action_name: str) -> List[str]:
     return list(set(variations))
 
 def generate_event_variations(event_name: str) -> List[str]:
-    """
-    Generate variations of an event name
-
-    Args:
-        event_name (str): Event name to generate variations for
-
-    Returns:
-        List[str]: List of event variations
-    """
+    # Generate variations of an event name
+    # Takes event name and returns list of event variations
     variations = [event_name.strip(), event_name.strip().lower()]
 
     # Add specific variations based on the event
@@ -257,15 +229,8 @@ def generate_event_variations(event_name: str) -> List[str]:
     return list(set(variations))
 
 def generate_mood_variations(mood_name: str) -> List[str]:
-    """
-    Generate variations of a mood name
-
-    Args:
-        mood_name (str): Mood name to generate variations for
-
-    Returns:
-        List[str]: List of mood variations
-    """
+    # Generate variations of a mood name
+    # Takes mood name and returns list of mood variations
     variations = [mood_name.strip(), mood_name.strip().lower()]
 
     # Add specific variations based on the mood
@@ -286,15 +251,8 @@ def generate_mood_variations(mood_name: str) -> List[str]:
     return list(set(variations))
 
 def generate_sublocation_variations(sublocation_name: str) -> List[str]:
-    """
-    Generate variations of a sublocation name
-
-    Args:
-        sublocation_name (str): Sublocation name to generate variations for
-
-    Returns:
-        List[str]: List of sublocation variations
-    """
+    # Generate variations of a sublocation name
+    # Takes sublocation name and returns list of sublocation variations
     variations = [sublocation_name.strip(), sublocation_name.strip().lower()]
 
     # Add specific variations based on the sublocation
@@ -364,15 +322,8 @@ CRICKET_SYNONYMS = {
 }
 
 def get_synonyms(word: str) -> List[str]:
-    """
-    Get synonyms for a word using WordNet and cricket-specific synonyms
-
-    Args:
-        word (str): Word to get synonyms for
-
-    Returns:
-        List[str]: List of synonyms
-    """
+    # Get synonyms for a word using WordNet and cricket-specific synonyms
+    # Takes a word and returns list of synonyms
     word_lower = word.lower()
 
     # Check cricket-specific synonyms first
@@ -393,24 +344,17 @@ def get_synonyms(word: str) -> List[str]:
     return synonyms
 
 def stem_word(word: str) -> str:
-    """Stem a word using Porter stemmer"""
+    # Stem a word using Porter stemmer
     return stemmer.stem(word)
 
 def get_word_stems(text: str) -> List[str]:
-    """Get stems of words in a text"""
+    # Get stems of words in a text
     words = word_tokenize(text.lower())
     return [stem_word(word) for word in words if word.isalnum()]
 
 def generate_refined_queries(query: str) -> List[str]:
-    """
-    Generate refined queries based on the original query
-
-    Args:
-        query (str): Original query
-
-    Returns:
-        List[str]: List of refined queries
-    """
+    # Generate refined queries based on the original query
+    # Takes original query and returns list of refined queries
     refined_queries = [query]  # Add the original query
     words = word_tokenize(query.lower())
 
@@ -463,15 +407,8 @@ def generate_refined_queries(query: str) -> List[str]:
     return refined_queries
 
 def correct_spelling(query: str) -> str:
-    """
-    Correct spelling in a query using a basic approach
-
-    Args:
-        query (str): Query to correct
-
-    Returns:
-        str: Corrected query
-    """
+    # Correct spelling in a query using a basic approach
+    # Takes query and returns corrected query
     words = word_tokenize(query.lower())
 
     # Define common cricket terms that might be misspelled
@@ -516,15 +453,8 @@ def correct_spelling(query: str) -> str:
 entity_variations = load_reference_data()
 
 def refine_query(query: str) -> List[str]:
-    """
-    Refine a query using multiple techniques including entity-specific variations
-
-    Args:
-        query (str): Original query
-
-    Returns:
-        List[str]: List of refined queries
-    """
+    # Refine a query using multiple techniques including entity-specific variations
+    # Takes original query and returns list of refined queries
     refined_queries = [query]  # Add the original query
 
     # 1. Correct spelling
@@ -592,15 +522,8 @@ def refine_query(query: str) -> List[str]:
     return list(dict.fromkeys(refined_queries))
 
 def generate_entity_specific_queries(query: str) -> List[str]:
-    """
-    Generate refined queries using entity-specific variations (players, actions, events, moods, sublocations)
-
-    Args:
-        query (str): Original query
-
-    Returns:
-        List[str]: List of refined queries with entity-specific variations
-    """
+    # Generate refined queries using entity-specific variations (players, actions, events, moods, sublocations)
+    # Takes original query and returns list of refined queries with entity-specific variations
     refined_queries = []
     query_lower = query.lower()
 

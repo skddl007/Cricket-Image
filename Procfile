@@ -1,1 +1,1 @@
-web: gunicorn app_gunicorn:app --timeout 180 --log-level debug
+web: gunicorn wsgi_flask:app --timeout 120 --log-level debug

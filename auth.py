@@ -5,7 +5,6 @@ Authentication module for the Cricket Image Chatbot
 import re
 import hashlib
 import psycopg2
-import streamlit as st
 from typing import Tuple, Optional, Dict, Any
 
 import config
@@ -226,10 +225,15 @@ def get_user_queries(user_id: int, limit: int = 10) -> list:
         print(f"Error getting user queries: {str(e)}")
         return []
 
-def initialize_auth_session_state():
-    """Initialize authentication-related session state variables"""
-    if 'user' not in st.session_state:
-        st.session_state.user = None
+def initialize_auth_session_state(session):
+    """
+    Initialize authentication-related session state variables
 
-    if 'is_authenticated' not in st.session_state:
-        st.session_state.is_authenticated = False
+    Args:
+        session: Flask session object
+    """
+    if 'user' not in session:
+        session['user'] = None
+
+    if 'is_authenticated' not in session:
+        session['is_authenticated'] = False
